@@ -1,0 +1,34 @@
+{
+  "name": "hardhat-project",
+  "scripts": {
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#e06e943",
+    "@indexed-finance/uniswap-v2-oracle": "^1.0.4",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^2.1.1",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^3.4.1",
+    "@typechain/ethers-v5": "^6.0.4",
+    "@types/mocha": "^8.2.2",
+    "@types/node": "^14.14.35",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "chai": "^4.3.4",
+    "dotenv": "^8.2.0",
+    "ethereum-waffle": "^3.3.0",
+    "ethers": "^5.0.32",
+    "hardhat": "^2.1.1",
+    "hardhat-deploy": "^0.7.0-beta.48",
+    "hardhat-typechain": "^0.3.5",
+    "prettier": "^2.2.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.6",
+    "solhint": "^3.3.4",
+    "solidity-coverage": "^0.7.16",
+    "ts-generator": "^0.1.1",
+    "ts-node": "^9.1.1",
+    "typechain": "^4.0.3",
+    "typescript": "^4.2.3"
+  }
+}
