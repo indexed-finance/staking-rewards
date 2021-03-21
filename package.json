@@ -1,5 +1,8 @@
 {
-  "name": "hardhat-project",
+  "name": "@indexed-finance/staking-rewards",
+  "repository": {
+    "url": "https://github.com/indexed-finance/staking-rewards"
+  },
   "scripts": {
     "test": "hardhat test"
   },
