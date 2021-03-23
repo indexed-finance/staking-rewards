@@ -104,10 +104,12 @@ describe("RedeemableShares", function () {
     await this.shares.connect(this.bob).withdrawFrom(this.alice.address, this.bob.address, ONE)
     expect(await this.shares.balanceOf(this.alice.address)).to.eq(ONE)
     expect(await this.underlying.balanceOf(this.bob.address)).to.eq(ONE)
+    expect(await this.shares.allowance(this.alice.address, this.bob.address)).to.eq(ONE)
 
     await this.underlying.mint(this.shares.address, ONE)
     await this.shares.connect(this.bob).withdrawFrom(this.alice.address, this.bob.address, ONE)
     expect(await this.shares.balanceOf(this.alice.address)).to.eq(0)
     expect(await this.underlying.balanceOf(this.bob.address)).to.eq(getBigNumber(3))
+    expect(await this.shares.allowance(this.alice.address, this.bob.address)).to.eq(0)
   })
 })
