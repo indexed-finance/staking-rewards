@@ -248,7 +248,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
       // Additionally, forward less gas so that we have enough buffer to complete harvest if the call eats up too much gas.
       // Forwarding: (63/64 of gasleft by evm convention) minus 5000
       // solhint-disable-next-line
-      (success, ) = _rewarder.call{ gas: gasleft() - 5000 }(abi.encodeWithSelector(IRewarder.onSushiReward.selector, pid, msg.sender, _pendingRewards));
+      (success, ) = _rewarder.call{ gas: gasleft() - 5000 }(abi.encodeWithSelector(IRewarder.onStakingReward.selector, pid, msg.sender, _pendingRewards));
     }
     emit Harvest(msg.sender, pid, _pendingRewards);
   }
