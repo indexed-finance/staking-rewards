@@ -8,6 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 contract RedeemableShares is ERC20 {
   using SafeERC20 for IERC20;
 
+  event TokensDeposited(uint256 underlyingDeposited, uint256 sharesMinted);
+  event TokensWithdrawn(uint256 underlyingWithdrawn, uint256 sharesBurned);
+
   IERC20 public immutable underlyingToken;
 
   constructor(
@@ -51,6 +54,7 @@ contract RedeemableShares is ERC20 {
     sharesMinted = fromUnderlying(underlyingAmount);
     _mint(msg.sender, sharesMinted);
     underlyingToken.safeTransferFrom(msg.sender, address(this), underlyingAmount);
+    emit TokensDeposited(underlyingAmount, sharesMinted);
   }
 
   /**
@@ -98,5 +102,6 @@ contract RedeemableShares is ERC20 {
     underlyingAmountRedeemed = toUnderlying(sharesAmount);
     _burn(sender, sharesAmount);
     underlyingToken.safeTransfer(recipient, underlyingAmountRedeemed);
+    emit TokensWithdrawn(underlyingAmountRedeemed, sharesAmount);
   }
 }
