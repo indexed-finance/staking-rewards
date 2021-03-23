@@ -12,6 +12,11 @@ import "./libraries/SignedSafeMath.sol";
 import "./interfaces/IRewarder.sol";
 import "./interfaces/IRewardsSchedule.sol";
 
+/// Copied and modified from:
+/// https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol
+/// https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol
+/// At commit hash 10148a31d9192bc803dac5d24fe0319b52ae99a4
+
 
 contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   using BoringMath for uint256;
@@ -23,10 +28,9 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
   bytes4 private constant SIG_ON_SUSHI_REWARD = 0xbb6cc2ef; // onSushiReward(uint256,address,uint256)
   uint256 private constant ACC_REWARDS_PRECISION = 1e12;
-  // Contract that determines the amount of rewards distributed per block
-  IRewardsSchedule public immutable rewardsSchedule;
-  // The rewards token
   IERC20 public immutable rewardsToken;
+  /// @notice Contract that determines the amount of rewards distributed per block
+  IRewardsSchedule public immutable rewardsSchedule;
 
 /** ==========  Structs  ========== */
 
@@ -244,7 +248,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
       // Additionally, forward less gas so that we have enough buffer to complete harvest if the call eats up too much gas.
       // Forwarding: (63/64 of gasleft by evm convention) minus 5000
       // solhint-disable-next-line
-      (success, ) = _rewarder.call{ gas: gasleft() - 5000 }(abi.encodeWithSelector(SIG_ON_SUSHI_REWARD, pid, msg.sender, _pendingRewards));
+      (success, ) = _rewarder.call{ gas: gasleft() - 5000 }(abi.encodeWithSelector(IRewarder.onSushiReward.selector, pid, msg.sender, _pendingRewards));
     }
     emit Harvest(msg.sender, pid, _pendingRewards);
   }
