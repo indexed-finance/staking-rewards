@@ -125,6 +125,6 @@ contract RedeemableShares is ERC20 {
     underlyingAmountRedeemed = toUnderlying(sharesAmount);
     _burn(sender, sharesAmount);
     underlyingToken.safeTransfer(recipient, underlyingAmountRedeemed);
-    emit TokensWithdrawn(underlyingAmountRedeemed, sharesAmount);
+    emit TokensWithdrawn(sender, recipient, underlyingAmountRedeemed, sharesAmount);
   }
 }
