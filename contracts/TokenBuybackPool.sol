@@ -69,11 +69,9 @@ contract TokenBuybackPool is BoringOwnable {
 
 /* ==========  Modifiers  ========== */
 
-  modifier _lock_ {
-    require(!_mutex, "ERR_REENTRY");
-    _mutex = true;
+  modifier onlyEOA() {
+    require(msg.sender == tx.origin, "TokenBuybackPool: must use EOA");
     _;
-    _mutex = false;
   }
 
 /* ==========  Constructor  ========== */
@@ -128,7 +126,7 @@ contract TokenBuybackPool is BoringOwnable {
     address[] calldata path
   )
     external
-    _lock_
+    onlyEOA
     returns (uint256 premiumPaidToCaller)
   {
     // calcOutGivenIn uses tokenIn as the token the pool is receiving and
@@ -183,7 +181,7 @@ contract TokenBuybackPool is BoringOwnable {
     address[] calldata path
   )
     external
-    _lock_
+    onlyEOA
     returns (uint256 premiumPaidToCaller)
   {
     // calcInGivenOut uses tokenIn as the token the pool is receiving and
@@ -236,7 +234,7 @@ contract TokenBuybackPool is BoringOwnable {
     uint256 minAmountOut
   )
     external
-    _lock_
+    onlyEOA
     returns (uint256 amountOut)
   {
     amountOut = calcOutGivenIn(tokenOut, amountIn);
@@ -267,7 +265,7 @@ contract TokenBuybackPool is BoringOwnable {
     uint256 maxAmountIn
   )
     external
-    _lock_
+    onlyEOA
     returns (uint256 amountIn)
   {
     amountIn = calcInGivenOut(tokenOut, amountOut);
