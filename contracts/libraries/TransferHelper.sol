@@ -2,6 +2,9 @@
 
 pragma solidity 0.6.12;
 
+/// Copied with modifications from:
+/// https://github.com/Uniswap/uniswap-lib/blob/master/contracts/libraries/TransferHelper.sol
+
 
 library TransferHelper {
   function safeApprove(address token, address to, uint value) internal {
