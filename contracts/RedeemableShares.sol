@@ -8,8 +8,16 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 contract RedeemableShares is ERC20 {
   using SafeERC20 for IERC20;
 
-  event TokensDeposited(uint256 underlyingDeposited, uint256 sharesMinted);
-  event TokensWithdrawn(uint256 underlyingWithdrawn, uint256 sharesBurned);
+  /**
+   * @dev Emitted when `underlyingDeposited` `underlyingToken` are deposited
+   * by `from` to mint `sharesMinted` shares for `to`.
+   */
+  event TokensDeposited(address indexed from, address indexed to, uint256 underlyingDeposited, uint256 sharesMinted);
+  /**
+   * @dev Emitted when `sharesBurned` shares are burned by `from` to withdraw
+   * `underlyingWithdrawn` `underlyingToken` for `to`.
+   */
+  event TokensWithdrawn(address indexed from, address indexed to, uint256 underlyingWithdrawn, uint256 sharesBurned);
 
   IERC20 public immutable underlyingToken;
 
@@ -51,10 +59,25 @@ contract RedeemableShares is ERC20 {
    * @return sharesMinted - Amount of shares minted to the caller
    */
   function deposit(uint256 underlyingAmount) public returns (uint256 sharesMinted) {
+    sharesMinted = _deposit(msg.sender, msg.sender, underlyingAmount);
+  }
+
+  /**
+   * @dev Deposit `underlyingAmount` of `underlyingToken` to mint shares of
+   * the redeemable asset at the current ratio of shares to underlying
+   * tokens held and transfer the minted tokens to `recipient`.
+   * @param underlyingAmount - Amount of the underlying asset to deposit
+   * @return sharesMinted - Amount of shares minted to the caller
+   */
+  function depositTo(address recipient, uint256 underlyingAmount) public returns (uint256 sharesMinted) {
+    sharesMinted = _deposit(msg.sender, recipient, underlyingAmount);
+  }
+
+  function _deposit(address sender, address recipient, uint256 underlyingAmount) internal returns (uint256 sharesMinted) {
     sharesMinted = fromUnderlying(underlyingAmount);
-    _mint(msg.sender, sharesMinted);
-    underlyingToken.safeTransferFrom(msg.sender, address(this), underlyingAmount);
-    emit TokensDeposited(underlyingAmount, sharesMinted);
+    _mint(recipient, sharesMinted);
+    underlyingToken.safeTransferFrom(sender, address(this), underlyingAmount);
+    emit TokensDeposited(sender, recipient, underlyingAmount, sharesMinted);
   }
 
   /**
