@@ -26,7 +26,6 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
 /** ==========  Constants  ========== */
 
-  bytes4 private constant SIG_ON_SUSHI_REWARD = 0xbb6cc2ef; // onSushiReward(uint256,address,uint256)
   uint256 private constant ACC_REWARDS_PRECISION = 1e12;
   IERC20 public immutable rewardsToken;
   /// @notice Contract that determines the amount of rewards distributed per block
