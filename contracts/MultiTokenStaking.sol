@@ -58,7 +58,6 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
   event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
   event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accRewardsPerShare);
-  event LogInit();
 
 /** ==========  Storage  ========== */
 
