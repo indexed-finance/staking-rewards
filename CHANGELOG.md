@@ -28,19 +28,20 @@ Like MasterChef, MasterChefV2 uses a multiplier `MASTERCHEF_SUSHI_PER_BLOCK` to 
 
 ## Code Changes
 
-### `onSushiReward`
-
-Renamed `onSushiReward` in `IRewarder` to `onStakingReward`. Replaced the `SIG_ON_SUSHI_REWARD` constant which was used to call the rewarder with `IRewarder.onStakingReward.selector`.
-
 ### Source of rewards
 MultiTokenStaking does not assume the rewards token is mintable; instead, it must be sent the rewards tokens by some other account prior to any distribution taking place. When rewards are claimed, the contract executes a standard ERC20 transfer rather than a mint call.
 
-### `init()`
+### `onSushiReward`
+Renamed `onSushiReward` in `IRewarder` to `onStakingReward`. Replaced the `SIG_ON_SUSHI_REWARD` constant which was used to call the rewarder with `IRewarder.onStakingReward.selector`.
 
+### `init()`
 MultiTokenStaking does not have an `init` function because it does not acquire rewards from a separate staking contract. Removed the `LogInit` event for the same reason.
 
 ### `devaddr`
 MasterChef stores `devaddr` - the address of the developer multisig - which receives a portion of all new SUSHI. Because MultiTokenStaking must have the rewards transferred to it rather than minting new tokens, it is assumed that any tokens which should be distributed to the developers will be sent to them externally, so this contract does not store `devaddr`.
+
+### `migrate()`
+MultiTokenStaking does not make any assumptions about the type of tokens that will be used for staking; as a result, there is no need for any kind of migration. The `IMigratorChef` and `migrate()` functions were removed.
 
 ### Access control
 MasterChef & MasterChefV2 require that calls to `set` and `add` (the functions to add or modify rewards) be executed by the owner. MultiTokenStaking allows the owner to set a `pointsAllocator` address. The `set` and `add` functions can be called by either the owner or the `pointsAllocator`.
