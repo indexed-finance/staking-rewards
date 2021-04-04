@@ -18,8 +18,8 @@ contract RewarderMock is IRewarder {
         rewardToken = _rewardToken;
     }
 
-    function onStakingReward(uint256, address user, uint256 sushiAmount) override external {
-        uint256 pendingReward = sushiAmount.mul(rewardMultiplier) / REWARD_TOKEN_DIVISOR;
+    function onStakingReward(uint256, address user, uint256 rewardAmount) override external {
+        uint256 pendingReward = rewardAmount.mul(rewardMultiplier) / REWARD_TOKEN_DIVISOR;
         uint256 rewardBal = rewardToken.balanceOf(address(this));
         if (pendingReward > rewardBal) {
             rewardToken.safeTransfer(user, rewardBal);
@@ -27,10 +27,10 @@ contract RewarderMock is IRewarder {
             rewardToken.safeTransfer(user, pendingReward);
         }
     }
-    function pendingTokens(uint256 pid, address user, uint256 sushiAmount) override external returns (address[] memory rewardTokens, uint256[] memory rewardAmounts) {
+    function pendingTokens(uint256 pid, address user, uint256 rewardAmount) override external returns (address[] memory rewardTokens, uint256[] memory rewardAmounts) {
         rewardTokens = new address[](1);
         rewardTokens[0] = address(rewardToken);
         rewardAmounts = new uint256[](1);
-        rewardAmounts[0] = sushiAmount.mul(rewardMultiplier) / REWARD_TOKEN_DIVISOR;
+        rewardAmounts[0] = rewardAmount.mul(rewardMultiplier) / REWARD_TOKEN_DIVISOR;
     }
 }
