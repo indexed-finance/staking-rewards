@@ -18,7 +18,7 @@ MasterChef determines rewards by block number: it has a `sushiPerBlock` value wh
 
 ### MasterChefV2.sol
 
-MasterChefV2 was created to allow dual rewards for individual staking tokens. Each staking token can be assigned a `rewarder` which implements the `IRewarder` interface. Whenever a user claims their rewards from MasterChefV2, the `rewarder` for that token (if there is one) will be called with `onStakingReward(uint256 pid, address user, uint256 sushiAmount)`.
+MasterChefV2 was created to allow dual rewards for individual staking tokens. Each staking token can be assigned a `rewarder` which implements the `IRewarder` interface. Whenever a user claims their rewards from MasterChefV2, the `rewarder` for that token (if there is one) will be called with `onSushiReward(uint256 pid, address user, uint256 sushiAmount)`.
 
 Because the original MasterChef is the only contract able to mint new SUSHI, MasterChefV2 is assigned a staking pool in the original contract, and the tokens it distributes as rewards are acquired by claiming rewards from the MCV2 staking pool.
 
@@ -27,6 +27,10 @@ MasterChefV2 uses an `init` function to begin rewards and tell the contract the 
 Like MasterChef, MasterChefV2 uses a multiplier `MASTERCHEF_SUSHI_PER_BLOCK` to determine rewards per block; however, it does not have any bonus rewards phase.
 
 ## Code Changes
+
+### `onSushiReward`
+
+Renamed `onSushiReward` in `IRewarder` to `onStakingReward`. Replaced the `SIG_ON_SUSHI_REWARD` constant which was used to call the rewarder with `IRewarder.onStakingReward.selector`.
 
 ### Source of rewards
 MultiTokenStaking does not assume the rewards token is mintable; instead, it must be sent the rewards tokens by some other account prior to any distribution taking place. When rewards are claimed, the contract executes a standard ERC20 transfer rather than a mint call.
