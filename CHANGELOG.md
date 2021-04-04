@@ -1,6 +1,6 @@
 # Changelog for MultiTokenStaking.sol
 
-MultiTokenStaking.sol contract is a fork of [MasterChef.sol](https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol) with elements taken from [MasterChefV2.sol](https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol)
+MultiTokenStaking.sol contract is a fork of [MasterChefV2.sol](https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol) with elements taken from [MasterChef.sol](https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol)
 
 ## Context on original contracts
 
