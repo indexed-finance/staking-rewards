@@ -4,7 +4,7 @@
     "url": "https://github.com/indexed-finance/staking-rewards"
   },
   "scripts": {
-    "test:coverage": "hardhat coverage",
+    "coverage": "hardhat coverage",
     "test": "hardhat test"
   },
   "devDependencies": {
