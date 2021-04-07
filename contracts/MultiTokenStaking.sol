@@ -26,22 +26,33 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 /** ==========  Constants  ========== */
 
   uint256 private constant ACC_REWARDS_PRECISION = 1e12;
+  /**
+   * @dev ERC20 token used to distribute rewards.
+   */
   IERC20 public immutable rewardsToken;
-  /// @notice Contract that determines the amount of rewards distributed per block
+  /**
+   * @dev Contract that determines the amount of rewards distributed per block.
+   */
   IRewardsSchedule public immutable rewardsSchedule;
 
 /** ==========  Structs  ========== */
 
-  /// @notice Info of each user.
-  /// `amount` LP token amount the user has provided.
-  /// `rewardDebt` The amount of rewards entitled to the user.
+  /**
+   * @dev Info of each user.
+   * @param amount LP token amount the user has provided.
+   * @param rewardDebt The amount of rewards entitled to the user.
+   */
   struct UserInfo {
     uint256 amount;
     int256 rewardDebt;
   }
 
-  /// @notice Info of each rewards pool.
-  /// `allocPoint` The amount of allocation points assigned to the pool.
+  /**
+   * @dev Info of each rewards pool.
+   * @param accRewardsPerShare Total rewards accumulated per staked token.
+   * @param lastRewardBlock Last time rewards were updated for the pool.
+   * @param allocPoint The amount of allocation points assigned to the pool.
+   */
   struct PoolInfo {
     uint128 accRewardsPerShare;
     uint64 lastRewardBlock;
@@ -60,17 +71,29 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
 /** ==========  Storage  ========== */
 
-  /// @notice Info of each staking pool.
+  /**
+   * @dev Info of each staking pool.
+   */
   PoolInfo[] public poolInfo;
-  /// @notice Address of the LP token for each staking pool.
+  /**
+   * @dev Address of the LP token for each staking pool.
+   */
   IERC20[] public lpToken;
-  /// @notice Address of each `IRewarder` contract.
+  /**
+   * @dev Address of each `IRewarder` contract.
+   */
   IRewarder[] public rewarder;
-  // Info of each user that stakes tokens.
+  /**
+   * @dev Info of each user that stakes tokens.
+   */
   mapping(uint256 => mapping(address => UserInfo)) public userInfo;
-  // Total allocation points. Must be the sum of all allocation points in all pools.
+  /**
+   * @dev Total allocation points. Must be the sum of all allocation points in all pools.
+   */
   uint256 public totalAllocPoint = 0;
-  // Account allowed to allocate points.
+  /**
+   * @dev Account allowed to allocate points.
+   */
   address public pointsAllocator;
 
   function poolLength() external view returns (uint256) {
@@ -79,7 +102,9 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
 /** ==========  Modifiers  ========== */
 
-  /// @notice Ensure the caller is allowed to allocate points
+  /**
+   * @dev Ensure the caller is allowed to allocate points.
+   */
   modifier onlyPointsAllocator {
     require(
       msg.sender == pointsAllocator || msg.sender == owner,
@@ -97,20 +122,23 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
 /** ==========  Configuration  ========== */
 
-  /// @notice Set the address of the points allocator.
-  /// This account will have the ability to set allocation points for LP rewards.
+  /**
+   * @dev Set the address of the points allocator.
+   * This account will have the ability to set allocation points for LP rewards.
+   */
   function setPointsAllocator(address _pointsAllocator) external onlyOwner {
     pointsAllocator = _pointsAllocator;
   }
 
 /** ==========  Pools  ========== */
-
-  /// @notice Add a new LP to the pool.
-  /// Can only be called by the owner or the points allocator.
-  /// Note: DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-  /// @param allocPoint AP of the new pool.
-  /// @param _lpToken Address of the LP ERC-20 token.
-  /// @param _rewarder Address of the rewarder delegate.
+  /**
+   * @dev Add a new LP to the pool.
+   * Can only be called by the owner or the points allocator.
+   * Note: DO NOT add the same LP token more than once. Rewards will be messed up if you do.
+   * @param allocPoint AP of the new pool.
+   * @param _lpToken Address of the LP ERC-20 token.
+   * @param _rewarder Address of the rewarder delegate.
+   */
   function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyPointsAllocator {
     uint256 lastRewardBlock = block.number;
     totalAllocPoint = totalAllocPoint.add(allocPoint);
@@ -125,12 +153,14 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
   }
 
-  /// @notice Update the given pool's allocation points.
-  /// Can only be called by the owner or the points allocator.
-  /// @param _pid The index of the pool. See `poolInfo`.
-  /// @param _allocPoint New AP of the pool.
-  /// @param _rewarder Address of the rewarder delegate.
-  /// @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
+  /**
+   * @dev Update the given pool's allocation points.
+   * Can only be called by the owner or the points allocator.
+   * @param _pid The index of the pool. See `poolInfo`.
+   * @param _allocPoint New AP of the pool.
+   * @param _rewarder Address of the rewarder delegate.
+   * @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
+   */
   function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyPointsAllocator {
     totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
     poolInfo[_pid].allocPoint = _allocPoint.to64();
@@ -138,8 +168,11 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
   }
 
-  /// @notice Update reward variables for all pools. Be careful of gas spending!
-  /// @param pids Pool IDs of all to be updated. Make sure to update all active pools.
+  /**
+   * @dev Update reward variables for all pools in `pids`.
+   * Note: This can become very expensive.
+   * @param pids Pool IDs of all to be updated. Make sure to update all active pools.
+   */
   function massUpdatePools(uint256[] calldata pids) external {
     uint256 len = pids.length;
     for (uint256 i = 0; i < len; ++i) {
@@ -147,9 +180,11 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     }
   }
 
-  /// @notice Update reward variables of the given pool.
-  /// @param pid The index of the pool. See `poolInfo`.
-  /// @return pool Returns the pool that was updated.
+  /**
+   * @dev Update reward variables of the given pool.
+   * @param pid The index of the pool. See `poolInfo`.
+   * @return pool Returns the pool that was updated.
+   */
   function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
     pool = poolInfo[pid];
     if (block.number > pool.lastRewardBlock) {
@@ -167,10 +202,12 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
 /** ==========  Users  ========== */
 
-  /// @notice View function to see pending rewards on frontend.
-  /// @param _pid The index of the pool. See `poolInfo`.
-  /// @param _user Address of user.
-  /// @return pending rewards for a given user.
+  /**
+   * @dev View function to see pending rewards on frontend.
+   * @param _pid The index of the pool. See `poolInfo`.
+   * @param _user Address of user.
+   * @return pending rewards for a given user.
+   */
   function pendingRewards(uint256 _pid, address _user) external view returns (uint256 pending) {
     PoolInfo memory pool = poolInfo[_pid];
     UserInfo storage user = userInfo[_pid][_user];
@@ -184,10 +221,12 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     pending = int256(user.amount.mul(accRewardsPerShare) / ACC_REWARDS_PRECISION).sub(user.rewardDebt).toUInt256();
   }
 
-  /// @notice Deposit LP tokens to earn rewards.
-  /// @param pid The index of the pool. See `poolInfo`.
-  /// @param amount LP token amount to deposit.
-  /// @param to The receiver of `amount` deposit benefit.
+  /**
+   * @dev Deposit LP tokens to earn rewards.
+   * @param pid The index of the pool. See `poolInfo`.
+   * @param amount LP token amount to deposit.
+   * @param to The receiver of `amount` deposit benefit.
+   */
   function deposit(uint256 pid, uint256 amount, address to) public {
     PoolInfo memory pool = updatePool(pid);
     UserInfo storage user = userInfo[pid][to];
@@ -202,10 +241,12 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     emit Deposit(msg.sender, pid, amount, to);
   }
 
-  /// @notice Withdraw LP tokens from the staking contract..
-  /// @param pid The index of the pool. See `poolInfo`.
-  /// @param amount LP token amount to withdraw.
-  /// @param to Receiver of the LP tokens.
+  /**
+   * @dev Withdraw LP tokens from the staking contract..
+   * @param pid The index of the pool. See `poolInfo`.
+   * @param amount LP token amount to withdraw.
+   * @param to Receiver of the LP tokens.
+   */
   function withdraw(uint256 pid, uint256 amount, address to) public {
     PoolInfo memory pool = updatePool(pid);
     UserInfo storage user = userInfo[pid][msg.sender];
@@ -220,10 +261,12 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     emit Withdraw(msg.sender, pid, amount, to);
   }
 
-  /// @notice Harvest proceeds for transaction sender to `to`.
-  /// @param pid The index of the pool. See `poolInfo`.
-  /// @param to Receiver of rewards.
-  /// @return success Returns bool indicating success of rewarder delegate call.
+  /**
+   * @dev Harvest proceeds for transaction sender to `to`.
+   * @param pid The index of the pool. See `poolInfo`.
+   * @param to Receiver of rewards.
+   * @return success Returns bool indicating success of rewarder delegate call.
+   */
   function harvest(uint256 pid, address to) public returns (bool success) {
     PoolInfo memory pool = updatePool(pid);
     UserInfo storage user = userInfo[pid][msg.sender];
@@ -250,9 +293,11 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     emit Harvest(msg.sender, pid, _pendingRewards);
   }
 
-  /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
-  /// @param pid The index of the pool. See `poolInfo`.
-  /// @param to Receiver of the LP tokens.
+  /**
+   * @dev Withdraw without caring about rewards. EMERGENCY ONLY.
+   * @param pid The index of the pool. See `poolInfo`.
+   * @param to Receiver of the LP tokens.
+   */
   function emergencyWithdraw(uint256 pid, address to) public {
     UserInfo storage user = userInfo[pid][msg.sender];
     uint256 amount = user.amount;
