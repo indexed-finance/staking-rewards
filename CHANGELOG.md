@@ -31,8 +31,26 @@ Like MasterChef, MasterChefV2 uses a multiplier `MASTERCHEF_SUSHI_PER_BLOCK` to 
 ### Preventing duplicate staking tokens
 The MasterChef contract tracks tokens by index rather than address in order to allow iteration over the staking tokens. The natspec comments for the `add` function state that an LP token should not be added twice, as that would "mess up rewards". The reason for this is that the accumulated rewards per staked token, which is calculated inside `updatePool`, is derived from the contract's balance in the staking token. If a token has two staking pools for the same token, the rewards per share value for both pools would be incorrect. In order to provide some safety beyond a "don't do this" comment, an additional mapping `stakingPoolExists` was added to require that the same token not be given two pools.
 
+### Replaced some arrays with mappings
+
+Replaced `lpToken` and `rewarder` arrays with mappings that use `uint256` keys. Neither of these variables had any reason to be arrays, as the index of a value in either is always determined by the index of the associated value in `poolInfo`, and they are only ever pushed to at the same time as `poolInfo`. This resulted in significant gas savings, documented below.
+
+
+| Function                  | Before | After  |
+|---------------------------|--------|--------|
+| `add`                       | 194396 | 152759 |
+| `batch`                     |  48045 |  47228 |
+| `deposit`                   |  91306 |  89655 |
+| `emergencyWithdraw`         |  24517 |  24091 |
+| `harvest`                   |  77106 |  75461 |
+| `massUpdatePools`           |  37904 |  37087 |
+| `set`                       |  35537 |  34706 |
+| `setPointsAllocator`        |  43460 |  43460 |
+| `updatePool`                |  39164 |  38347 |
+| `withdraw`                  |  56304 |  54650 |
+
 ### Source of rewards
-MultiTokenStaking does not assume the rewards token is mintable; instead, it must be sent the rewards tokens by some other account prior to any distribution taking place. When rewards are claimed, the contract executes a standard ERC20 transfer rather than a mint call or a harvest call.
+MultiTokenStaking does not assume the rewards token is mintable; instead, it must be sent the rewards tokens by some other account prior to any distribution taking place. When rewards are claimed, the contract executes a standard ERC20 transfer rather than a mint call or a harvest call that calls another staking pool.
 
 ### Access control
 MasterChef & MasterChefV2 require that calls to `set` and `add` (the functions to add or modify rewards) be executed by the owner. MultiTokenStaking allows the owner to set a `pointsAllocator` address. The `set` and `add` functions can be called by either the owner or the `pointsAllocator`.
@@ -52,9 +70,6 @@ MasterChef stores `devaddr` - the address of the developer multisig - which rece
 
 #### `migrate()`
 MultiTokenStaking does not make any assumptions about the type of tokens that will be used for staking; as a result, there is no need for any kind of migration. The `IMigratorChef` interface and `migrate()` function were removed.
-
-#### `harvest`
-See [Rewards per block](#rewards-per-block)
 
 #### `safeSushiTransfer`
 Unlike MasterChef, MultiTokenStaking reverts if the contract does not have a sufficient balance to pay out rewards.
