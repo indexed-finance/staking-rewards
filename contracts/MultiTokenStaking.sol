@@ -89,11 +89,11 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   /**
    * @dev Address of the LP token for each staking pool.
    */
-  IERC20[] public lpToken;
+  mapping(uint256 => IERC20) public lpToken;
   /**
    * @dev Address of each `IRewarder` contract.
    */
-  IRewarder[] public rewarder;
+  mapping(uint256 => IRewarder) public rewarder;
   /**
    * @dev Info of each user that stakes tokens.
    */
@@ -151,10 +151,12 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    */
   function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyPointsAllocator {
     require(!stakingPoolExists[address(_lpToken)], "MultiTokenStaking: Staking pool already exists.");
-
+    uint256 pid = poolInfo.length;
     totalAllocPoint = totalAllocPoint.add(allocPoint);
-    lpToken.push(_lpToken);
-    rewarder.push(_rewarder);
+    lpToken[pid] = _lpToken;
+    if (address(_rewarder) != address(0)) {
+      rewarder[pid] = _rewarder;
+    }
     poolInfo.push(PoolInfo({
       allocPoint: allocPoint.to64(),
       lastRewardBlock: block.number.to64(),
@@ -162,7 +164,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     }));
     stakingPoolExists[address(_lpToken)] = true;
 
-    emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
+    emit LogPoolAddition(pid, allocPoint, _lpToken, _rewarder);
   }
 
   /**
