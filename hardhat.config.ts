@@ -4,6 +4,7 @@ import "solidity-coverage";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-typechain";
 import "dotenv/config";
+import "hardhat-gas-reporter";
 
 import { HardhatUserConfig } from "hardhat/types";
 

@@ -4,6 +4,7 @@
     "url": "https://github.com/indexed-finance/staking-rewards"
   },
   "scripts": {
+    "compile": "hardhat compile",
     "coverage": "hardhat coverage",
     "test": "hardhat test"
   },
@@ -25,6 +26,7 @@
     "ethers": "^5.0.32",
     "hardhat": "^2.1.1",
     "hardhat-deploy": "^0.7.0-beta.48",
+    "hardhat-gas-reporter": "^1.0.4",
     "hardhat-typechain": "^0.3.5",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.6",
