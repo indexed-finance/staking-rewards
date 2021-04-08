@@ -67,6 +67,13 @@ describe("MultiTokenStaking", function () {
       )
     })
 
+    it("Should revert if pool exists for token", async function () {
+      await this.rewards.add(10, this.rlp.address, this.rewarder.address)
+      await expect(this.rewards.add(10, this.rlp.address, this.rewarder.address)).to.be.revertedWith(
+        "MultiTokenStaking: Staking pool already exists"
+      )
+    })
+
     it("Should be callable by points allocator", async function () {
       await this.rewards.setPointsAllocator(this.bob.address)
       await expect(this.rewards.connect(this.bob).add(10, this.rlp.address, this.rewarder.address))

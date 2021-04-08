@@ -37,6 +37,8 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   IERC20 public immutable rewardsToken;
   /**
    * @dev Contract that determines the amount of rewards distributed per block.
+   * Note: This contract MUST always return the exact same value for any
+   * combination of `(from, to)` IF `from` is greater than `block.number`.
    */
   IRewardsSchedule public immutable rewardsSchedule;
 
@@ -76,6 +78,10 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
 /** ==========  Storage  ========== */
 
+  /**
+   * @dev Indicates whether a staking pool exists for a given staking token.
+   */
+  mapping(address => bool) public stakingPoolExists;
   /**
    * @dev Info of each staking pool.
    */
@@ -139,22 +145,23 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   /**
    * @dev Add a new LP to the pool.
    * Can only be called by the owner or the points allocator.
-   * Note: DO NOT add the same LP token more than once. Rewards will be messed up if you do.
    * @param allocPoint AP of the new pool.
    * @param _lpToken Address of the LP ERC-20 token.
    * @param _rewarder Address of the rewarder delegate.
    */
   function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyPointsAllocator {
-    uint256 lastRewardBlock = block.number;
+    require(!stakingPoolExists[address(_lpToken)], "MultiTokenStaking: Staking pool already exists.");
+
     totalAllocPoint = totalAllocPoint.add(allocPoint);
     lpToken.push(_lpToken);
     rewarder.push(_rewarder);
-
     poolInfo.push(PoolInfo({
       allocPoint: allocPoint.to64(),
-      lastRewardBlock: lastRewardBlock.to64(),
+      lastRewardBlock: block.number.to64(),
       accRewardsPerShare: 0
     }));
+    stakingPoolExists[address(_lpToken)] = true;
+
     emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
   }
 
