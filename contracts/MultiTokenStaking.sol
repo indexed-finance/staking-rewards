@@ -11,10 +11,15 @@ import "./libraries/SignedSafeMath.sol";
 import "./interfaces/IRewarder.sol";
 import "./interfaces/IRewardsSchedule.sol";
 
-/// Copied and modified from:
-/// https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol
-/// https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol
-/// At commit hash 10148a31d9192bc803dac5d24fe0319b52ae99a4
+/************************************************************************************************
+Originally from
+https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol
+and
+https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol
+
+This source code has been modified from the original, which was copied from the github repository
+at commit hash 10148a31d9192bc803dac5d24fe0319b52ae99a4.
+*************************************************************************************************/
 
 
 contract MultiTokenStaking is BoringOwnable, BoringBatchable {
