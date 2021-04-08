@@ -164,7 +164,9 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyPointsAllocator {
     totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
     poolInfo[_pid].allocPoint = _allocPoint.to64();
-    if (overwrite) { rewarder[_pid] = _rewarder; }
+    if (overwrite) {
+      rewarder[_pid] = _rewarder;
+    }
     emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
   }
 
@@ -288,7 +290,9 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
       // Additionally, forward less gas so that we have enough buffer to complete harvest if the call eats up too much gas.
       // Forwarding: (63/64 of gasleft by evm convention) minus 5000
       // solhint-disable-next-line
-      (success, ) = _rewarder.call{ gas: gasleft() - 5000 }(abi.encodeWithSelector(IRewarder.onStakingReward.selector, pid, msg.sender, _pendingRewards));
+      (success, ) = _rewarder.call{gas: gasleft() - 5000}(
+        abi.encodeWithSelector(IRewarder.onStakingReward.selector, pid, msg.sender, _pendingRewards)
+      );
     }
     emit Harvest(msg.sender, pid, _pendingRewards);
   }
