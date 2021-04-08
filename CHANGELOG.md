@@ -1,6 +1,6 @@
 # Changelog for MultiTokenStaking.sol
 
-MultiTokenStaking.sol contract is a fork of [MasterChefV2.sol](https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol) with elements taken from [MasterChef.sol](https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol)
+MultiTokenStaking.sol is a fork of [MasterChefV2.sol](https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol) with elements taken from [MasterChef.sol](https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol)
 
 ## Context on original contracts
 
@@ -26,32 +26,42 @@ MasterChefV2 uses an `init` function to begin rewards and tell the contract the 
 
 Like MasterChef, MasterChefV2 uses a multiplier `MASTERCHEF_SUSHI_PER_BLOCK` to determine rewards per block; however, it does not have any bonus rewards phase.
 
-## Code Changes
+## Significant Changes
+
+### Preventing duplicate staking tokens
+The MasterChef contract tracks tokens by index rather than address in order to minimize gas costs (from the calculation of slots in a mapping). The natspec comments for the `add` function state that an LP token should not be added twice, as that would "mess up rewards". The reason for this is that the accumulated rewards per staked token, which is calculated inside `updatePool`, is derived from the contract's balance in the staking token. If a token has two staking pools for the same token, the rewards per share value for both pools would be incorrect. In order to provide some safety beyond a "don't do this" comment, an additional mapping `stakingPoolExists` was added to require that the same token not be given two pools.
 
 ### Source of rewards
 MultiTokenStaking does not assume the rewards token is mintable; instead, it must be sent the rewards tokens by some other account prior to any distribution taking place. When rewards are claimed, the contract executes a standard ERC20 transfer rather than a mint call or a harvest call.
 
-### `onSushiReward`
-Renamed `onSushiReward` in `IRewarder` to `onStakingReward`. Replaced the `SIG_ON_SUSHI_REWARD` constant which was used to call the rewarder with `IRewarder.onStakingReward.selector`.
-
-### `init()`
-MultiTokenStaking does not have an `init` function because it does not acquire rewards from a separate staking contract. Removed the `LogInit` event for the same reason.
-
-### `devaddr`
-MasterChef stores `devaddr` - the address of the developer multisig - which receives a portion of all new SUSHI. Because MultiTokenStaking must have the rewards transferred to it rather than minting new tokens, it is assumed that any tokens which should be distributed to the developers will be sent to them externally, so this contract does not store `devaddr`.
-
-### `migrate()`
-MultiTokenStaking does not make any assumptions about the type of tokens that will be used for staking; as a result, there is no need for any kind of migration. The `IMigratorChef` and `migrate()` functions were removed.
-
 ### Access control
 MasterChef & MasterChefV2 require that calls to `set` and `add` (the functions to add or modify rewards) be executed by the owner. MultiTokenStaking allows the owner to set a `pointsAllocator` address. The `set` and `add` functions can be called by either the owner or the `pointsAllocator`.
 
-### Rewards Per Block
+### Rewards per block
 
 Rather than using a constant multiplier to determine rewards per block, MultiTokenStaking uses a `rewardsSchedule` contract assigned in the constructor which implements the `IRewardsSchedule` interface. This interface has a function `getRewardsForBlockRange(uint256 from, uint256 to)` which determines the total amount of rewards that should be distributed between two blocks. This pattern was used instead of a constant multiplier in order to allow rewards for each block to be set more dynamically, such as with a linear decay function or varying rates for different block ranges.
 Because of this pattern, we do not use a `startBlock` field, as the rewards schedule will simply return 0 for any blocks prior to the beginning of rewards distribution.
 
-### Cosmetic changes
+### Removals
+
+#### `init()`
+MultiTokenStaking does not have an `init` function because it does not acquire rewards from a separate staking contract. Removed the `LogInit` event for the same reason.
+
+#### `devaddr`
+MasterChef stores `devaddr` - the address of the developer multisig - which receives a portion of all new SUSHI. Because MultiTokenStaking must have the rewards transferred to it rather than minting new tokens, it is assumed that any tokens which should be distributed to the developers will be sent to them externally, so this contract does not store `devaddr`.
+
+#### `migrate()`
+MultiTokenStaking does not make any assumptions about the type of tokens that will be used for staking; as a result, there is no need for any kind of migration. The `IMigratorChef` interface and `migrate()` function were removed.
+
+#### `harvest`
+See [Rewards per block](#rewards-per-block)
+
+#### `safeSushiTransfer`
+Unlike MasterChef, MultiTokenStaking reverts if the contract does not have a sufficient balance to pay out rewards.
+
+## Cosmetic changes
+
+### Style
 
 Changed indentation from 4 spaces to 2.
 
@@ -59,6 +69,10 @@ Added section separation using `/** ========== Section ========== */` tags.
 
 Removed space between license identifier and pragma statement.
 
-### Variables Names
+### Names
 
-`sushi` was renamed `rewardsToken`, and all references to sushi amounts were replaced with references to reward amounts.
+Renamed `onSushiReward` in `IRewarder` to `onStakingReward`.
+
+Replaced the `SIG_ON_SUSHI_REWARD` constant which was used to call the rewarder with `IRewarder.onStakingReward.selector`.
+
+Replaced `sushi` with `rewardsToken`, and replaced all references to sushi amounts with references to reward amounts.
