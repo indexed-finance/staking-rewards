@@ -116,7 +116,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   /**
    * @dev Ensure the caller is allowed to allocate points.
    */
-  modifier onlyPointsAllocator {
+  modifier onlyPointsAllocatorOrOwner {
     require(
       msg.sender == pointsAllocator || msg.sender == owner,
       "MultiTokenStaking: not authorized to allocate points"
@@ -145,26 +145,26 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   /**
    * @dev Add a new LP to the pool.
    * Can only be called by the owner or the points allocator.
-   * @param allocPoint AP of the new pool.
+   * @param _allocPoint AP of the new pool.
    * @param _lpToken Address of the LP ERC-20 token.
    * @param _rewarder Address of the rewarder delegate.
    */
-  function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyPointsAllocator {
+  function add(uint256 _allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyPointsAllocatorOrOwner {
     require(!stakingPoolExists[address(_lpToken)], "MultiTokenStaking: Staking pool already exists.");
     uint256 pid = poolInfo.length;
-    totalAllocPoint = totalAllocPoint.add(allocPoint);
+    totalAllocPoint = totalAllocPoint.add(_allocPoint);
     lpToken[pid] = _lpToken;
     if (address(_rewarder) != address(0)) {
       rewarder[pid] = _rewarder;
     }
     poolInfo.push(PoolInfo({
-      allocPoint: allocPoint.to64(),
+      allocPoint: _allocPoint.to64(),
       lastRewardBlock: block.number.to64(),
       accRewardsPerShare: 0
     }));
     stakingPoolExists[address(_lpToken)] = true;
 
-    emit LogPoolAddition(pid, allocPoint, _lpToken, _rewarder);
+    emit LogPoolAddition(pid, _allocPoint, _lpToken, _rewarder);
   }
 
   /**
@@ -173,15 +173,15 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    * @param _pid The index of the pool. See `poolInfo`.
    * @param _allocPoint New AP of the pool.
    * @param _rewarder Address of the rewarder delegate.
-   * @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
+   * @param _overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
    */
-  function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyPointsAllocator {
+  function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool _overwrite) public onlyPointsAllocatorOrOwner {
     totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
     poolInfo[_pid].allocPoint = _allocPoint.to64();
-    if (overwrite) {
+    if (_overwrite) {
       rewarder[_pid] = _rewarder;
     }
-    emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
+    emit LogSetPool(_pid, _allocPoint, _overwrite ? _rewarder : rewarder[_pid], _overwrite);
   }
 
   /**
@@ -198,21 +198,21 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
   /**
    * @dev Update reward variables of the given pool.
-   * @param pid The index of the pool. See `poolInfo`.
+   * @param _pid The index of the pool. See `poolInfo`.
    * @return pool Returns the pool that was updated.
    */
-  function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
-    pool = poolInfo[pid];
+  function updatePool(uint256 _pid) public returns (PoolInfo memory pool) {
+    pool = poolInfo[_pid];
     if (block.number > pool.lastRewardBlock) {
-      uint256 lpSupply = lpToken[pid].balanceOf(address(this));
+      uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
       if (lpSupply > 0) {
         uint256 rewardsTotal = rewardsSchedule.getRewardsForBlockRange(pool.lastRewardBlock, block.number);
         uint256 poolReward = rewardsTotal.mul(pool.allocPoint) / totalAllocPoint;
         pool.accRewardsPerShare = pool.accRewardsPerShare.add((poolReward.mul(ACC_REWARDS_PRECISION) / lpSupply).to128());
       }
       pool.lastRewardBlock = block.number.to64();
-      poolInfo[pid] = pool;
-      emit LogUpdatePool(pid, pool.lastRewardBlock, lpSupply, pool.accRewardsPerShare);
+      poolInfo[_pid] = pool;
+      emit LogUpdatePool(_pid, pool.lastRewardBlock, lpSupply, pool.accRewardsPerShare);
     }
   }
 
@@ -239,53 +239,53 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
   /**
    * @dev Deposit LP tokens to earn rewards.
-   * @param pid The index of the pool. See `poolInfo`.
-   * @param amount LP token amount to deposit.
-   * @param to The receiver of `amount` deposit benefit.
+   * @param _pid The index of the pool. See `poolInfo`.
+   * @param _amount LP token amount to deposit.
+   * @param _to The receiver of `_amount` deposit benefit.
    */
-  function deposit(uint256 pid, uint256 amount, address to) public {
-    PoolInfo memory pool = updatePool(pid);
-    UserInfo storage user = userInfo[pid][to];
+  function deposit(uint256 _pid, uint256 _amount, address _to) public {
+    PoolInfo memory pool = updatePool(_pid);
+    UserInfo storage user = userInfo[_pid][_to];
 
     // Effects
-    user.amount = user.amount.add(amount);
-    user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION));
+    user.amount = user.amount.add(_amount);
+    user.rewardDebt = user.rewardDebt.add(int256(_amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION));
 
     // Interactions
-    lpToken[pid].safeTransferFrom(msg.sender, address(this), amount);
+    lpToken[_pid].safeTransferFrom(msg.sender, address(this), _amount);
 
-    emit Deposit(msg.sender, pid, amount, to);
+    emit Deposit(msg.sender, _pid, _amount, _to);
   }
 
   /**
    * @dev Withdraw LP tokens from the staking contract..
-   * @param pid The index of the pool. See `poolInfo`.
-   * @param amount LP token amount to withdraw.
-   * @param to Receiver of the LP tokens.
+   * @param _pid The index of the pool. See `poolInfo`.
+   * @param _amount LP token amount to withdraw.
+   * @param _to Receiver of the LP tokens.
    */
-  function withdraw(uint256 pid, uint256 amount, address to) public {
-    PoolInfo memory pool = updatePool(pid);
-    UserInfo storage user = userInfo[pid][msg.sender];
+  function withdraw(uint256 _pid, uint256 _amount, address _to) public {
+    PoolInfo memory pool = updatePool(_pid);
+    UserInfo storage user = userInfo[_pid][msg.sender];
 
     // Effects
-    user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION));
-    user.amount = user.amount.sub(amount);
+    user.rewardDebt = user.rewardDebt.sub(int256(_amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION));
+    user.amount = user.amount.sub(_amount);
 
     // Interactions
-    lpToken[pid].safeTransfer(to, amount);
+    lpToken[_pid].safeTransfer(_to, _amount);
 
-    emit Withdraw(msg.sender, pid, amount, to);
+    emit Withdraw(msg.sender, _pid, _amount, _to);
   }
 
   /**
-   * @dev Harvest proceeds for transaction sender to `to`.
-   * @param pid The index of the pool. See `poolInfo`.
-   * @param to Receiver of rewards.
+   * @dev Harvest proceeds for transaction sender to `_to`.
+   * @param _pid The index of the pool. See `poolInfo`.
+   * @param _to Receiver of rewards.
    * @return success Returns bool indicating success of rewarder delegate call.
    */
-  function harvest(uint256 pid, address to) public returns (bool success) {
-    PoolInfo memory pool = updatePool(pid);
-    UserInfo storage user = userInfo[pid][msg.sender];
+  function harvest(uint256 _pid, address _to) public returns (bool success) {
+    PoolInfo memory pool = updatePool(_pid);
+    UserInfo storage user = userInfo[_pid][msg.sender];
     int256 accumulatedRewards = int256(user.amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION);
     uint256 _pendingRewards = accumulatedRewards.sub(user.rewardDebt).toUInt256();
     if (_pendingRewards == 0) {
@@ -296,33 +296,33 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     user.rewardDebt = accumulatedRewards;
 
     // Interactions
-    rewardsToken.safeTransfer(to, _pendingRewards);
+    rewardsToken.safeTransfer(_to, _pendingRewards);
 
-    address _rewarder = address(rewarder[pid]);
+    address _rewarder = address(rewarder[_pid]);
     if (_rewarder != address(0)) {
       // Note: Do it this way because we don't want to fail harvest if only the delegate call fails.
       // Additionally, forward less gas so that we have enough buffer to complete harvest if the call eats up too much gas.
       // Forwarding: (63/64 of gasleft by evm convention) minus 5000
       // solhint-disable-next-line
       (success, ) = _rewarder.call{gas: gasleft() - 5000}(
-        abi.encodeWithSelector(IRewarder.onStakingReward.selector, pid, msg.sender, _pendingRewards)
+        abi.encodeWithSelector(IRewarder.onStakingReward.selector, _pid, msg.sender, _pendingRewards)
       );
     }
-    emit Harvest(msg.sender, pid, _pendingRewards);
+    emit Harvest(msg.sender, _pid, _pendingRewards);
   }
 
   /**
    * @dev Withdraw without caring about rewards. EMERGENCY ONLY.
-   * @param pid The index of the pool. See `poolInfo`.
-   * @param to Receiver of the LP tokens.
+   * @param _pid The index of the pool. See `poolInfo`.
+   * @param _to Receiver of the LP tokens.
    */
-  function emergencyWithdraw(uint256 pid, address to) public {
-    UserInfo storage user = userInfo[pid][msg.sender];
+  function emergencyWithdraw(uint256 _pid, address _to) public {
+    UserInfo storage user = userInfo[_pid][msg.sender];
     uint256 amount = user.amount;
     user.amount = 0;
     user.rewardDebt = 0;
     // Note: transfer can fail or succeed if `amount` is zero.
-    lpToken[pid].safeTransfer(to, amount);
-    emit EmergencyWithdraw(msg.sender, pid, amount, to);
+    lpToken[_pid].safeTransfer(_to, amount);
+    emit EmergencyWithdraw(msg.sender, _pid, amount, _to);
   }
 }
