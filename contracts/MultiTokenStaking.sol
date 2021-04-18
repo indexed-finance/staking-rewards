@@ -37,7 +37,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   /**
    * @dev Contract that determines the amount of rewards distributed per block.
    * Note: This contract MUST always return the exact same value for any
-   * combination of `(from, to)` IF `from` is greater than `block.number`.
+   * combination of `(from, to)` IF `from` is less than `block.number`.
    */
   IRewardsSchedule public immutable rewardsSchedule;
 
