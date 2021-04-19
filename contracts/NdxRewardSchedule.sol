@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 
 /**
  * @dev Rewards schedule that distributed 1,500,000 tokens over two years using a linear
- * decay that distributes roughly 2x tokens in the first block for every 0.3 tokens in the
+ * decay that distributes roughly 1.7 tokens in the first block for every 0.3 tokens in the
  * last block.
  *
  * A value of 13.2 seconds was selected as the average block time to set 4778182 as the number
