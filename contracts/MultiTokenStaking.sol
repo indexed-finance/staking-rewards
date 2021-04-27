@@ -114,6 +114,12 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    */
   address public pointsAllocator;
 
+  /**
+   * @dev Total rewards received from governance for distribution.
+   * Used to return remaining rewards if staking is canceled.
+   */
+  uint256 public totalRewardsReceived;
+
   function poolLength() external view returns (uint256) {
     return poolInfo.length;
   }
@@ -146,6 +152,17 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    */
   function setPointsAllocator(address _pointsAllocator) external onlyOwner {
     pointsAllocator = _pointsAllocator;
+  }
+
+  /**
+   * @dev Add rewards to be distributed.
+   * Note: This function must be used to add rewards if the owner
+   * wants to retain the option to cancel distribution and reclaim
+   * undistributed tokens.
+   */
+  function addRewards(uint256 amount) external onlyOwner {
+    rewardsToken.safeTransferFrom(owner(), address(this), amount);
+    totalRewardsReceived = totalRewardsReceived.add(amount);
   }
 
 /** ==========  Pools  ========== */
