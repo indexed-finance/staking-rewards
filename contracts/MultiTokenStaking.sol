@@ -30,10 +30,12 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 /** ==========  Constants  ========== */
 
   uint256 private constant ACC_REWARDS_PRECISION = 1e12;
+
   /**
    * @dev ERC20 token used to distribute rewards.
    */
   IERC20 public immutable rewardsToken;
+
   /**
    * @dev Contract that determines the amount of rewards distributed per block.
    * Note: This contract MUST always return the exact same value for any
@@ -81,26 +83,32 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    * @dev Indicates whether a staking pool exists for a given staking token.
    */
   mapping(address => bool) public stakingPoolExists;
+
   /**
    * @dev Info of each staking pool.
    */
   PoolInfo[] public poolInfo;
+
   /**
    * @dev Address of the LP token for each staking pool.
    */
   mapping(uint256 => IERC20) public lpToken;
+
   /**
    * @dev Address of each `IRewarder` contract.
    */
   mapping(uint256 => IRewarder) public rewarder;
+
   /**
    * @dev Info of each user that stakes tokens.
    */
   mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+
   /**
    * @dev Total allocation points. Must be the sum of all allocation points in all pools.
    */
   uint256 public totalAllocPoint = 0;
+
   /**
    * @dev Account allowed to allocate points.
    */
@@ -130,7 +138,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     rewardsSchedule = IRewardsSchedule(_rewardsSchedule);
   }
 
-/** ==========  Configuration  ========== */
+/** ==========  Governance  ========== */
 
   /**
    * @dev Set the address of the points allocator.
