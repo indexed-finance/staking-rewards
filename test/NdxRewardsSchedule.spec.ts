@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { BigNumber } from 'ethers';
 import { NDXRewardsSchedule } from "../types/NDXRewardsSchedule";
 import { getBigNumber } from "./utilities";
@@ -13,8 +13,8 @@ const calculateExactRewards = (from: number, to: number) => {
   return BigNumber.from(`0x${sum.toString(16)}`);
 }
 
-const calculateRewardsForRange = (from: number, to: number) => {
-  if (to > 4778281) to = 4778281;
+const calculateRewardsForRange = (from: number, to: number, endBlock = 4778281) => {
+  if (to > endBlock) to = endBlock;
   const x = BigNumber.from(from - 100);
   const y = BigNumber.from(to - 100);
   const c = BigNumber.from('45990054395');
@@ -27,20 +27,25 @@ const calculateRewardsForRange = (from: number, to: number) => {
 }
 
 describe("NDXRewardsSchedule", function () {
+  const [, notOwner] = waffle.provider.getWallets()
   let schedule: NDXRewardsSchedule;
 
-  before(async function () {
-    const RewardsSchedule = await ethers.getContractFactory('NDXRewardsSchedule');
-    schedule = (await RewardsSchedule.deploy(100)) as NDXRewardsSchedule;
-  })
+  function setupTests() {
+    before(async function () {
+      const RewardsSchedule = await ethers.getContractFactory('NDXRewardsSchedule');
+      schedule = (await RewardsSchedule.deploy(100)) as NDXRewardsSchedule;
+    })
+  }
 
   describe('Settings', () => {
-    it('START_BLOCK', async () => {
-      expect(await schedule.START_BLOCK()).to.eq(100)
+    setupTests();
+
+    it('startBlock', async () => {
+      expect(await schedule.startBlock()).to.eq(100)
     })
 
-    it('END_BLOCK', async () => {
-      expect(await schedule.END_BLOCK()).to.eq(4778281)
+    it('endBlock', async () => {
+      expect(await schedule.endBlock()).to.eq(4778281)
     })
   })
 
@@ -81,21 +86,21 @@ describe("NDXRewardsSchedule", function () {
     })
 
     describe('Boundaries', () => {
-      it('Should return 0 if to<=START_BLOCK', async () => {
+      it('Should return 0 if to<=startBlock', async () => {
         expect(await schedule.getRewardsForBlockRange(0, 100)).to.eq(0)
       })
 
-      it('Should return 0 if from>=END_BLOCK', async () => {
+      it('Should return 0 if from>=endBlock', async () => {
         expect(await schedule.getRewardsForBlockRange(4778281, 4778283)).to.eq(0)
       })
 
-      it('Should use from=START_BLOCK if from<START_BLOCK', async () => {
+      it('Should use from=startBlock if from<startBlock', async () => {
         expect(await schedule.getRewardsForBlockRange(99, 105)).to.eq(
           calculateRewardsForRange(100, 105)
         )
       })
 
-      it('Should use to=END_BLOCK if to>END_BLOCK', async () => {
+      it('Should use to=endBlock if to>endBlock', async () => {
         expect(await schedule.getRewardsForBlockRange(100, 4778283)).to.eq(
           calculateRewardsForRange(100, 4778281)
         )
@@ -105,6 +110,74 @@ describe("NDXRewardsSchedule", function () {
         await expect(
           schedule.getRewardsForBlockRange(110, 109)
         ).to.be.revertedWith('Bad block range')
+      })
+    })
+  })
+
+  describe('setEarlyEndBlock', () => {
+    describe('Restrictions', () => {
+      setupTests();
+
+      it('Should revert if not called by owner', async () => {
+        await expect(
+          schedule.connect(notOwner).setEarlyEndBlock(1000)
+        ).to.be.revertedWith('Ownable: caller is not the owner')
+      })
+
+      it('Should revert if block number <= current', async () => {
+        const blockNumber = await ethers.provider.getBlockNumber();
+        await expect(
+          schedule.setEarlyEndBlock(blockNumber)
+        ).to.be.revertedWith('End block too early')
+        await expect(
+          schedule.setEarlyEndBlock(blockNumber + 1)
+        ).to.be.revertedWith('End block too early')
+      })
+  
+      it('Should revert if block number is <= startBlock', async () => {
+        await expect(
+          schedule.setEarlyEndBlock(99)
+        ).to.be.revertedWith('End block too early')
+        await expect(
+          schedule.setEarlyEndBlock(100)
+        ).to.be.revertedWith('End block too early')
+      })
+  
+      it('Should revert if block number is >= endBlock', async () => {
+        await expect(
+          schedule.setEarlyEndBlock(4778281)
+        ).to.be.revertedWith('End block too late')
+        await expect(
+          schedule.setEarlyEndBlock(4778282)
+        ).to.be.revertedWith('End block too late')
+      })
+  
+      it('Should revert if early end block has already been set', async () => {
+        await schedule.setEarlyEndBlock(1000)
+        await expect(
+          schedule.setEarlyEndBlock(1000)
+        ).to.be.revertedWith('Early end block already set')
+      })
+    })
+
+    describe('Early termination', () => {
+      setupTests();
+
+      it('Should set endBlock', async () => {
+        await schedule.setEarlyEndBlock(1000)
+        expect(await schedule.endBlock()).to.eq(1000)
+      })
+
+      describe('getRewardsForBlockRange', () => {
+        it('Should return 0 if from>=endBlock', async () => {
+          expect(await schedule.getRewardsForBlockRange(1000, 1001)).to.eq(0)
+        })
+  
+        it('Should use to=endBlock if to>endBlock', async () => {
+          expect(await schedule.getRewardsForBlockRange(100, 1003)).to.eq(
+            calculateRewardsForRange(100, 1003, 1000)
+          )
+        })
       })
     })
   })
