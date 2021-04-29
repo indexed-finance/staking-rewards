@@ -76,6 +76,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
   event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
   event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accRewardsPerShare);
+  event RewardsAdded(uint256 amount);
 
 /** ==========  Storage  ========== */
 
@@ -156,13 +157,15 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
   /**
    * @dev Add rewards to be distributed.
+   *
    * Note: This function must be used to add rewards if the owner
    * wants to retain the option to cancel distribution and reclaim
    * undistributed tokens.
    */
   function addRewards(uint256 amount) external onlyOwner {
-    rewardsToken.safeTransferFrom(owner(), address(this), amount);
+    rewardsToken.safeTransferFrom(owner, address(this), amount);
     totalRewardsReceived = totalRewardsReceived.add(amount);
+    emit RewardsAdded(amount);
   }
 
 /** ==========  Pools  ========== */
