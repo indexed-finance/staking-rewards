@@ -23,6 +23,19 @@ contract NDXRewardsSchedule is Ownable, IRewardsSchedule {
     endBlock = startBlock_ + 4778181;
   }
 
+  /**
+   * @dev Set an early end block for rewards.
+   * Note: This can only be called once.
+   */
+  function setEarlyEndBlock(uint256 earlyEndBlock) external override onlyOwner {
+    uint256 endBlock_ = endBlock;
+    require(endBlock_ == startBlock + 4778181, "Early end block already set");
+    require(earlyEndBlock > block.number && earlyEndBlock > startBlock, "End block too early");
+    require(earlyEndBlock < endBlock_, "End block too late");
+    endBlock = earlyEndBlock;
+    emit EarlyEndBlockSet(earlyEndBlock);
+  }
+
   function getRewardsForBlockRange(uint256 from, uint256 to) external view override returns (uint256) {
     require(to >= from, "Bad block range");
     uint256 endBlock_ = endBlock;
