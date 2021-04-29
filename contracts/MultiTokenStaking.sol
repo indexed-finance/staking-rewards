@@ -170,7 +170,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
   /**
    * @dev Set the early end block for rewards on the rewards
-   * schedule contract and returns any tokens which will not
+   * schedule contract and return any tokens which will not
    * be distributed by the early end block.
    */
   function setEarlyEndBlock(uint256 earlyEndBlock) external onlyOwner {
