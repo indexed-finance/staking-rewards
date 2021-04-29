@@ -174,6 +174,9 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    * be distributed by the early end block.
    */
   function setEarlyEndBlock(uint256 earlyEndBlock) external onlyOwner {
+    // Rewards schedule contract must assert that an early end block has not
+    // already been set, otherwise this can be used to drain the staking
+    // contract, meaning users will not receive earned rewards.
     uint256 totalRewards = rewardsSchedule.getRewardsForBlockRange(
       rewardsSchedule.startBlock(),
       earlyEndBlock
