@@ -168,6 +168,21 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     emit RewardsAdded(amount);
   }
 
+  /**
+   * @dev Set the early end block for rewards on the rewards
+   * schedule contract and returns any tokens which will not
+   * be distributed by the early end block.
+   */
+  function setEarlyEndBlock(uint256 earlyEndBlock) external onlyOwner {
+    uint256 totalRewards = rewardsSchedule.getRewardsForBlockRange(
+      rewardsSchedule.startBlock(),
+      earlyEndBlock
+    );
+    uint256 undistributedAmount = totalRewardsReceived.sub(totalRewards);
+    rewardsSchedule.setEarlyEndBlock(earlyEndBlock);
+    rewardsToken.safeTransfer(owner, undistributedAmount);
+  }
+
 /** ==========  Pools  ========== */
   /**
    * @dev Add a new LP to the pool.
