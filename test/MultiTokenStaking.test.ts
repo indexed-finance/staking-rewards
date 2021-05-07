@@ -10,6 +10,7 @@ import {
   RewarderBrokenMock,
   RewardsScheduleMock
 } from '../types';
+import { constants } from "ethers";
 
 interface StakingFixture {
   rewardsToken: ERC20Mock;
@@ -46,7 +47,7 @@ const stakingFixture: Fixture<StakingFixture> = async (): Promise<StakingFixture
   await rewardsToken.approve(rewards.address, getBigNumber(15000))
   await rewards.addRewards(getBigNumber(10000))
   await dummy.approve(rewards.address, getBigNumber(10))
-  await rlp.transfer(bob.address, getBigNumber(1))
+  await rlp.mint(bob.address, getBigNumber(1))
   await advanceBlockTo(10)
   return {
     rewardsToken,
@@ -355,6 +356,38 @@ describe("MultiTokenStaking", function () {
       expect((await rewards.userInfo(0, alice.address)).rewardDebt).to.be.equal("-" + expectedRewards)
       await rewards.harvest(0, alice.address)
       expect(await rewardsToken.balanceOf(alice.address)).to.be.equal(expectedRewards)
+    })
+  })
+
+  describe('WithdrawAndHarvest', function () {
+    it("Harvest and withdraw with external reward", async function () {
+      await r.transfer(rewarder.address, getBigNumber(100000))
+      await rewards.add(10, rlp.address, rewarder.address)
+      await rlp.approve(rewards.address, getBigNumber(10))
+      expect(await rewards.lpToken(0)).to.be.equal(rlp.address)
+      let log = await rewards.deposit(0, getBigNumber(1), alice.address)
+      await advanceBlockTo(20)
+      let log2 = await rewards.withdrawAndHarvest(0, getBigNumber(1), alice.address)
+      let expectedRewards = getBigNumber(100).mul(log2.blockNumber - log.blockNumber)
+      expect((await rewards.userInfo(0, alice.address)).rewardDebt).to.be.equal(0)
+      expect(await rewardsToken.balanceOf(alice.address))
+        .to.be.equal(await r.balanceOf(alice.address))
+        .to.be.equal(expectedRewards)
+      expect(await rlp.balanceOf(alice.address)).to.eq(getBigNumber(10))
+    })
+
+    it('Harvest and withdraw with no external reward', async function () {
+      await rewards.add(10, rlp.address, constants.AddressZero)
+      await rlp.approve(rewards.address, getBigNumber(10))
+      expect(await rewards.lpToken(0)).to.be.equal(rlp.address)
+      let log = await rewards.deposit(0, getBigNumber(1), alice.address)
+      await advanceBlockTo(20)
+      let log2 = await rewards.withdrawAndHarvest(0, getBigNumber(1), alice.address)
+      let expectedRewards = getBigNumber(100).mul(log2.blockNumber - log.blockNumber)
+      expect((await rewards.userInfo(0, alice.address)).rewardDebt).to.be.equal(0)
+      expect(await rewardsToken.balanceOf(alice.address))
+        .to.be.equal(expectedRewards)
+      expect(await rlp.balanceOf(alice.address)).to.eq(getBigNumber(10))
     })
   })
 
