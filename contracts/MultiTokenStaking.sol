@@ -357,6 +357,39 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   }
 
   /**
+   * @dev Withdraw LP tokens and harvest accumulated rewards, sending both to `to`.
+   * @param _pid The index of the pool. See `poolInfo`.
+   * @param _amount LP token amount to withdraw.
+   * @param _to Receiver of the LP tokens and rewards.
+   */
+  function withdrawAndHarvest(uint256 _pid, uint256 _amount, address _to) public returns (bool success) {
+    PoolInfo memory pool = updatePool(_pid);
+    UserInfo storage user = userInfo[_pid][msg.sender];
+    int256 accumulatedRewards = int256(user.amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION);
+    uint256 _pendingRewards = accumulatedRewards.sub(user.rewardDebt).toUInt256();
+    if (_pendingRewards == 0) {
+      success = false;
+    }
+
+    // Effects
+    user.rewardDebt = accumulatedRewards.sub(int256(_amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION));
+    user.amount = user.amount.sub(_amount);
+
+    // Interactions
+    rewardsToken.safeTransfer(_to, _pendingRewards);
+    lpToken[_pid].safeTransfer(_to, _amount);
+    address _rewarder = address(rewarder[_pid]);
+    if (_rewarder != address(0)) {
+      (success, ) = _rewarder.call{gas: gasleft() - 5000}(
+        abi.encodeWithSelector(IRewarder.onStakingReward.selector, _pid, msg.sender, _pendingRewards)
+      );
+    }
+
+    emit Harvest(msg.sender, _pid, _pendingRewards);
+    emit Withdraw(msg.sender, _pid, _amount, _to);
+  }
+
+  /**
    * @dev Withdraw without caring about rewards. EMERGENCY ONLY.
    * @param _pid The index of the pool. See `poolInfo`.
    * @param _to Receiver of the LP tokens.
