@@ -303,7 +303,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
   }
 
   /**
-   * @dev Withdraw LP tokens from the staking contract..
+   * @dev Withdraw LP tokens from the staking contract.
    * @param _pid The index of the pool. See `poolInfo`.
    * @param _amount LP token amount to withdraw.
    * @param _to Receiver of the LP tokens.
