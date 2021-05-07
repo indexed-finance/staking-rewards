@@ -345,13 +345,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
 
     address _rewarder = address(rewarder[_pid]);
     if (_rewarder != address(0)) {
-      // Note: Do it this way because we don't want to fail harvest if only the delegate call fails.
-      // Additionally, forward less gas so that we have enough buffer to complete harvest if the call eats up too much gas.
-      // Forwarding: (63/64 of gasleft by evm convention) minus 5000
-      // solhint-disable-next-line
-      (success, ) = _rewarder.call{gas: gasleft() - 5000}(
-        abi.encodeWithSelector(IRewarder.onStakingReward.selector, _pid, msg.sender, _pendingRewards)
-      );
+      IRewarder(_rewarder).onStakingReward(_pid, msg.sender, _pendingRewards);
     }
     emit Harvest(msg.sender, _pid, _pendingRewards);
   }
@@ -380,9 +374,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     lpToken[_pid].safeTransfer(_to, _amount);
     address _rewarder = address(rewarder[_pid]);
     if (_rewarder != address(0)) {
-      (success, ) = _rewarder.call{gas: gasleft() - 5000}(
-        abi.encodeWithSelector(IRewarder.onStakingReward.selector, _pid, msg.sender, _pendingRewards)
-      );
+      IRewarder(_rewarder).onStakingReward(_pid, msg.sender, _pendingRewards);
     }
 
     emit Harvest(msg.sender, _pid, _pendingRewards);
