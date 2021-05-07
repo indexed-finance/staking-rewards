@@ -326,16 +326,12 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    * @dev Harvest proceeds for transaction sender to `_to`.
    * @param _pid The index of the pool. See `poolInfo`.
    * @param _to Receiver of rewards.
-   * @return success Returns bool indicating success of rewarder delegate call.
    */
-  function harvest(uint256 _pid, address _to) public returns (bool success) {
+  function harvest(uint256 _pid, address _to) public {
     PoolInfo memory pool = updatePool(_pid);
     UserInfo storage user = userInfo[_pid][msg.sender];
     int256 accumulatedRewards = int256(user.amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION);
     uint256 _pendingRewards = accumulatedRewards.sub(user.rewardDebt).toUInt256();
-    if (_pendingRewards == 0) {
-      success = false;
-    }
 
     // Effects
     user.rewardDebt = accumulatedRewards;
@@ -356,14 +352,11 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    * @param _amount LP token amount to withdraw.
    * @param _to Receiver of the LP tokens and rewards.
    */
-  function withdrawAndHarvest(uint256 _pid, uint256 _amount, address _to) public returns (bool success) {
+  function withdrawAndHarvest(uint256 _pid, uint256 _amount, address _to) public {
     PoolInfo memory pool = updatePool(_pid);
     UserInfo storage user = userInfo[_pid][msg.sender];
     int256 accumulatedRewards = int256(user.amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION);
     uint256 _pendingRewards = accumulatedRewards.sub(user.rewardDebt).toUInt256();
-    if (_pendingRewards == 0) {
-      success = false;
-    }
 
     // Effects
     user.rewardDebt = accumulatedRewards.sub(int256(_amount.mul(pool.accRewardsPerShare) / ACC_REWARDS_PRECISION));
