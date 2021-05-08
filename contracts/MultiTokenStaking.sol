@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./libraries/SignedSafeMath.sol";
 import "./interfaces/IRewarder.sol";
 import "./interfaces/IRewardsSchedule.sol";
@@ -21,7 +21,7 @@ at commit hash 10148a31d9192bc803dac5d24fe0319b52ae99a4.
 *************************************************************************************************/
 
 
-contract MultiTokenStaking is BoringOwnable, BoringBatchable {
+contract MultiTokenStaking is Ownable, BoringBatchable {
   using BoringMath for uint256;
   using BoringMath128 for uint128;
   using BoringERC20 for IERC20;
@@ -132,7 +132,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    */
   modifier onlyPointsAllocatorOrOwner {
     require(
-      msg.sender == pointsAllocator || msg.sender == owner,
+      msg.sender == pointsAllocator || msg.sender == owner(),
       "MultiTokenStaking: not authorized to allocate points"
     );
     _;
@@ -163,7 +163,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
    * undistributed tokens.
    */
   function addRewards(uint256 amount) external onlyOwner {
-    rewardsToken.safeTransferFrom(owner, address(this), amount);
+    rewardsToken.safeTransferFrom(msg.sender, address(this), amount);
     totalRewardsReceived = totalRewardsReceived.add(amount);
     emit RewardsAdded(amount);
   }
@@ -183,7 +183,7 @@ contract MultiTokenStaking is BoringOwnable, BoringBatchable {
     );
     uint256 undistributedAmount = totalRewardsReceived.sub(totalRewards);
     rewardsSchedule.setEarlyEndBlock(earlyEndBlock);
-    rewardsToken.safeTransfer(owner, undistributedAmount);
+    rewardsToken.safeTransfer(owner(), undistributedAmount);
   }
 
 /** ==========  Pools  ========== */
