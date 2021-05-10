@@ -161,7 +161,7 @@ contract MultiTokenStaking is Ownable, BoringBatchable {
    * wants to retain the option to cancel distribution and reclaim
    * undistributed tokens.
    */
-  function addRewards(uint256 amount) external onlyOwner {
+  function addRewards(uint256 amount) external onlyPointsAllocatorOrOwner {
     rewardsToken.safeTransferFrom(msg.sender, address(this), amount);
     totalRewardsReceived = totalRewardsReceived.add(amount);
     emit RewardsAdded(amount);

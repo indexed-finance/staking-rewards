@@ -108,28 +108,60 @@ describe("MultiTokenStaking", function () {
   })
 
   describe('AddRewards', function () {
-    it('Should revert if not called by owner', async function () {
-      await expect(rewards.connect(bob).addRewards(1)).to.be.revertedWith("Ownable: caller is not the owner")
+    describe('When caller is not owner or points allocator', async function () {
+      it('Should revert if not called by owner or points allocator', async function () {
+        await expect(rewards.connect(bob).addRewards(1)).to.be.revertedWith("MultiTokenStaking: not authorized to allocate points")
+      })
     })
 
-    it('Should emit RewardsAdded', async function () {
-      await rewardsToken.mint(alice.address, getBigNumber(20))
-      await expect(rewards.addRewards(getBigNumber(20)))
-        .to.emit(rewards, 'RewardsAdded')
-        .withArgs(getBigNumber(20));
+    describe('When caller is owner', async function () {
+      it('Should emit RewardsAdded', async function () {
+        await rewardsToken.mint(alice.address, getBigNumber(20))
+        await expect(rewards.addRewards(getBigNumber(20)))
+          .to.emit(rewards, 'RewardsAdded')
+          .withArgs(getBigNumber(20));
+      })
+  
+      it('Should transfer `amount` from caller to contract', async function () {
+        await rewardsToken.mint(alice.address, getBigNumber(20))
+        await expect(rewards.addRewards(getBigNumber(20)))
+          .to.emit(rewardsToken, 'Transfer')
+          .withArgs(alice.address, rewards.address, getBigNumber(20));
+      })
+  
+      it('Should increase totalRewardsReceived', async function () {
+        await rewardsToken.mint(alice.address, getBigNumber(20))
+        await rewards.addRewards(getBigNumber(20))
+        expect(await rewards.totalRewardsReceived()).to.eq(getBigNumber(10020))
+      })
     })
 
-    it('Should transfer `amount` from caller to contract', async function () {
-      await rewardsToken.mint(alice.address, getBigNumber(20))
-      await expect(rewards.addRewards(getBigNumber(20)))
-        .to.emit(rewardsToken, 'Transfer')
-        .withArgs(alice.address, rewards.address, getBigNumber(20));
-    })
-
-    it('Should increase totalRewardsReceived', async function () {
-      await rewardsToken.mint(alice.address, getBigNumber(20))
-      await rewards.addRewards(getBigNumber(20))
-      expect(await rewards.totalRewardsReceived()).to.eq(getBigNumber(10020))
+    describe('When caller is points allocator', async function () {
+      it('Should emit RewardsAdded', async function () {
+        await rewards.setPointsAllocator(bob.address)
+        await rewardsToken.mint(bob.address, getBigNumber(20))
+        await rewardsToken.connect(bob).approve(rewards.address, getBigNumber(20))
+        await expect(rewards.connect(bob).addRewards(getBigNumber(20)))
+          .to.emit(rewards, 'RewardsAdded')
+          .withArgs(getBigNumber(20));
+      })
+  
+      it('Should transfer `amount` from caller to contract', async function () {
+        await rewards.setPointsAllocator(bob.address)
+        await rewardsToken.mint(bob.address, getBigNumber(20))
+        await rewardsToken.connect(bob).approve(rewards.address, getBigNumber(20))
+        await expect(rewards.connect(bob).addRewards(getBigNumber(20)))
+          .to.emit(rewardsToken, 'Transfer')
+          .withArgs(bob.address, rewards.address, getBigNumber(20));
+      })
+  
+      it('Should increase totalRewardsReceived', async function () {
+        await rewards.setPointsAllocator(bob.address)
+        await rewardsToken.mint(bob.address, getBigNumber(20))
+        await rewardsToken.connect(bob).approve(rewards.address, getBigNumber(20))
+        await rewards.connect(bob).addRewards(getBigNumber(20))
+        expect(await rewards.totalRewardsReceived()).to.eq(getBigNumber(10020))
+      })
     })
   })
 
