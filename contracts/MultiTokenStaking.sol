@@ -76,6 +76,7 @@ contract MultiTokenStaking is Ownable, BoringBatchable {
   event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
   event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accRewardsPerShare);
   event RewardsAdded(uint256 amount);
+  event PointsAllocatorSet(address pointsAllocator);
 
 /** ==========  Storage  ========== */
 
@@ -152,6 +153,7 @@ contract MultiTokenStaking is Ownable, BoringBatchable {
    */
   function setPointsAllocator(address _pointsAllocator) external onlyOwner {
     pointsAllocator = _pointsAllocator;
+    emit PointsAllocatorSet(_pointsAllocator);
   }
 
   /**
