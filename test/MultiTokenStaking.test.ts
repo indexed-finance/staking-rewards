@@ -105,6 +105,12 @@ describe("MultiTokenStaking", function () {
       await rewards.setPointsAllocator(bob.address)
       expect(await rewards.pointsAllocator()).to.eq(bob.address)
     })
+
+    it("Should emit PointsAllocatorSet", async function () {
+      await expect(rewards.setPointsAllocator(bob.address))
+        .to.emit(rewards, 'PointsAllocatorSet')
+        .withArgs(bob.address)
+    })
   })
 
   describe('AddRewards', function () {
